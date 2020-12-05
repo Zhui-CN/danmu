@@ -15,10 +15,8 @@ class HuYa(BaseClass):
     def run(self, text):
         super().run(text)
         self.chrome.get_web(self.url, second=4)
-
         if not self.is_login():
             return
-
         self.chrome.send_text(xpath="//textarea[contains(@id, 'pub_msg_input')]", text=text, second=2)
         self.chrome.click(xpath="//*[contains(@id, 'msg_send_bt')]", second=1)
         logger.info("平台:{}->房间:{}->弹幕:{}".format(self.name, self.url, text))

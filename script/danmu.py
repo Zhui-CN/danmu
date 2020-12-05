@@ -13,12 +13,22 @@ from utils.redis import RedisSession
 from utils.utils import is_menu
 
 platform_map = {
-    # "douyu": DouYu,
-    "huya": HuYa,
-    "九秀": JiuXiu
+    "0": "0",
+    "1": {
+        "name": "九秀",
+        "class": JiuXiu
+    },
+    "2": {
+        "name": "虎牙",
+        "class": HuYa
+    },
+    "3": {
+        "name": "斗鱼",
+        "class": DouYu
+    }
 }
 
-platform_ls = [key for key in platform_map.keys()]
+platform_map[str(len(platform_map))] = [platform for platform in platform_map.values() if platform != "0"]
 
 
 class InitChrome:
@@ -42,12 +52,11 @@ class InitChrome:
         cls._instance = None
 
 
-def init(text_ls, is_headless, choice_platform, sleep_time):
+def init(text_ls, is_headless, platform, sleep_time):
     while True:
         chrome_obj = InitChrome(is_headless)
-        # name = choice(platform_ls)
-        name = choice_platform
-        platform_obj = platform_map.get(name)(chrome_obj.chrome)
+        platform_item = choice(platform) if isinstance(platform, list) else platform
+        platform_obj = platform_item.get("class")(chrome_obj.chrome)
         try:
             platform_obj.run(choice(text_ls))
         except (NotUrlError, NotCookieError) as e:
@@ -69,20 +78,20 @@ def danmu_run():
     while True:
         try:
             print("------------请选择平台-------------")
-            for idx, key in enumerate(platform_map.keys()):
-                print(" {}: 启动{}弹幕".format(idx + 1, key))
-            print(" 0: 取消添加")
+            for idx, value in platform_map.items():
+                if idx != "0" and idx != str(len(platform_map) - 1):
+                    print(" {}: 启动{}弹幕".format(idx, value["name"]))
+            print(" {}: 全平台随机发送".format(len(platform_map) - 1))
+            print(" 0: 退出")
             print("---------------------------------")
-            choice_platform = int(is_menu(input("请输入功能序号:")))
+            platform = is_menu(platform_map.get(input("请输入功能序号:")))
             print("------请选择是否使用无窗口模式-------")
             print(" 1: 启用")
             print(" 2: 不启用")
             print(" 0: 退出")
             print("---------------------------------")
             is_headless = int(is_menu(input("请输入功能序号:")))
-            print("------请选择是否使用无窗口模式-------")
             sleep_time = int(is_menu(input("弹幕间隔时间(>1,<9000的整数):")))
-            print("---------------------------------")
             cpu_num = cpu_count()
             logger.info("当前PC有{}个核数".format(cpu_num))
             input_count = int(is_menu(input('请输入浏览器个数:')))
@@ -92,8 +101,9 @@ def danmu_run():
             with open('words.txt', 'r', encoding='utf-8') as f:
                 text_ls = f.read().split('\n')
             for _ in range(cpu_num):
-                process = multiprocessing.Process(target=init,
-                                                  args=(text_ls, is_headless, platform_ls[choice_platform - 1],sleep_time))
+                process = multiprocessing.Process(
+                    target=init, args=(text_ls, is_headless, platform, sleep_time)
+                )
                 process.start()
                 process_list.append(process)
             for p in process_list:
