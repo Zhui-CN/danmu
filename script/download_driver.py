@@ -2,8 +2,9 @@ import os
 import re
 import zipfile
 import requests
-from utils.utils import get_canonical_os_name, locate_web_driver
+from utils.utils import get_canonical_os_name, locate_web_driver, is_menu
 from utils.log import logger
+from utils.error import NotMenuError, BreakProgram, NotDigitError
 
 platform_map = {"windows": "win32", "mac": "mac64", "linux": "linux64"}
 download_url = "https://npm.taobao.org/mirrors/chromedriver/{}/chromedriver_{}.zip"
@@ -20,7 +21,25 @@ def get_version_url(version):
     else:
         version_ls = re.findall(r"chromedriver/({}.*?)/".format(version.split(".")[0]), resp_text)
         if version_ls:
-            return version_ls[-1]
+            while True:
+                try:
+                    logger.info("查询到以下版本列表")
+                    print("------------请选择版本-------------")
+                    version_map = {"0": "0"}
+                    for index, version in enumerate(version_ls, 1):
+                        version_map[str(index)] = version
+                        print(" {}: {}".format(index, version))
+                    print(" 0: 退出")
+                    print("---------------------------------")
+                    menu_input = is_menu(input("请选择版本号:").strip())
+                    if not version_map.get(menu_input): raise NotMenuError
+                    return version_map.get(menu_input)
+                except (NotMenuError, NotDigitError) as e:
+                    logger.info(e)
+                    continue
+                except BreakProgram:
+                    break
+
         return None
 
 
